@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cicd-app
+  namespace: cicd-demo
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: cicd-app
+
+  template:
+    metadata:
+      labels:
+        app: cicd-app
+
+    spec:
+      containers:
+        - name: cicd-app
+
+          image: krishnavarmavuyyuri/cicd-kubernetes-app:1.0
+
+          ports:
+            - containerPort: 3000
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+
+            limits:
+              cpu: "300m"
+              memory: "128Mi"
