@@ -1,11 +1,12 @@
+
 {
   "name": "cicd-kubernetes-project",
   "version": "1.0.0",
   "main": "src/server.js",
   "scripts": {
-  "start": "node src/server.js",
-  "test": "jest --runInBand"
-},
+    "start": "node src/server.js",
+    "test": "jest --runInBand"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -16,5 +17,17 @@
   "devDependencies": {
     "jest": "^30.4.2",
     "supertest": "^7.2.2"
+  },
+  "jest": {
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/actions-runner/"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/actions-runner/"
+    ]
   }
 }

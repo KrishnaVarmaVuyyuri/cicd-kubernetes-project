@@ -26,7 +26,7 @@ const users = [
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "UP",
-    message: "Application is healthy"
+    message: "Application is healthy - cicd v2"
   });
 });
 
