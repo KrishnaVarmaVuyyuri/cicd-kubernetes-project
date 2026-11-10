@@ -1,467 +1,553 @@
-# CI/CD Pipeline with GitHub Actions, Docker & Kubernetes
+# CI/CD and GitOps Pipeline with GitHub Actions, Docker, Kubernetes & Argo CD
 
+A hands-on DevOps project demonstrating automated application testing, Docker image creation, Docker Hub publishing, Kubernetes deployment, and GitOps-based continuous delivery using Argo CD on AWS EC2.
 
-A complete DevOps CI/CD project that automates application testing, Docker image creation, Docker Hub publishing, and Kubernetes deployment using GitHub Actions.
+<img width="829" height="341" alt="Screenshot 2026-11-10 173656" src="https://github.com/user-attachments/assets/d53f89e3-e293-40b5-9ad1-bc662d00f71b" />
 
 
 ## Architecture
 
-
 ```text
-                         Developer
-                             |
-                             | git push
-                             v
-                         GitHub
-                             |
-                             v
-                    GitHub Actions
-                             |
-                    +--------+--------+
-                    |                 |
-                    v                 v
-               Run Tests        Build Docker Image
-                    |                 |
-                    |                 v
-                    |            Docker Hub
-                    |                 |
-                    +--------+--------+
+                 Developer
+                     |
+                  Git Push
+                     |
+                     v
+              GitHub Application Repo
+                     |
+                     v
+              GitHub Actions (CI)
+                     |
+             +-------+-------+
+             |               |
+             v               v
+          Run Tests      Build Docker Image
                              |
                              v
-                   Self-Hosted Runner
+                         Docker Hub
                              |
                              v
-                       Kubernetes
-                        (Minikube)
+                   Update GitOps Repository
                              |
                              v
-                       Deployment
+                  GitHub GitOps Repository
                              |
-                    RollingUpdate
+                             v
+                         Argo CD
+                             |
+                    Detect Git Changes
+                             |
+                             v
+                    Kubernetes Cluster
+                       (Minikube)
+                             |
+                             v
+                      Deployment
+                             |
+                       RollingUpdate
                              |
                              v
                            Pod
-                     +-------+-------+
-                     |               |
-                     v               v
-                Readiness        Liveness
-                   Probe            Probe
-                     |               |
-                     +-------+-------+
                              |
                              v
                        Node.js App
-Project Overview
+```
 
-This project demonstrates an automated CI/CD pipeline for deploying a containerized Node.js application to Kubernetes.
+## Project Overview
 
-Whenever code is pushed to the main branch:
+This project demonstrates a containerized Node.js application deployed to Kubernetes using a CI/CD and GitOps workflow.
 
-GitHub Actions checks out the source code.
-Node.js dependencies are installed.
-Automated tests are executed.
-A Docker image is built.
-The image is tagged using the Git commit SHA.
-The image is pushed to Docker Hub.
-A self-hosted GitHub Actions runner connects to the local Kubernetes cluster.
-Kubernetes manifests are applied.
-The Deployment is updated with the new Docker image.
-Kubernetes performs a rolling update.
-Readiness and liveness probes monitor application health.
-GitHub Actions verifies the deployment rollout.
-Technologies Used
-Git
-GitHub
-GitHub Actions
-Docker
-Docker Hub
-Kubernetes
-Minikube
-kubectl
-YAML
-Node.js
-npm
-Project Structure
-cicd-kubernetes-project/
-|
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-|
-├── k8s/
-│   ├── namespace.yaml
-│   ├── deployment.yaml
-│   └── service.yaml
-|
-├── src/
-│   └── ...
-|
-├── tests/
-│   └── ...
-|
-├── Dockerfile
-├── .dockerignore
-├── package.json
-├── package-lock.json
-└── README.md
-CI/CD Pipeline
+The infrastructure runs on an AWS EC2 instance, with Minikube providing the Kubernetes environment and Argo CD managing application deployment from Git.
 
-The pipeline contains three major stages.
+### Main workflow
 
-1. Continuous Integration
-Git Push
-   |
-   v
-Checkout Code
-   |
-   v
-Install Dependencies
-   |
-   v
-Run Tests
+1. Developer pushes application code to GitHub.
+2. GitHub Actions checks out the source code.
+3. Dependencies are installed and automated tests are executed.
+4. Docker builds the application image.
+5. The image is tagged and published to Docker Hub.
+6. The GitOps repository stores Kubernetes manifests.
+7. Argo CD monitors the GitOps repository.
+8. Argo CD synchronizes the desired configuration with Kubernetes.
+9. Kubernetes performs rolling updates and runs the application.
 
-If tests fail, the Docker image is not built or deployed.
+*Automated GitOps image-tag updates from GitHub Actions are the next planned integration step.*
 
-2. Docker Build and Push
-Successful Tests
-      |
-      v
-Docker Build
-      |
-      v
-Git Commit SHA Tag
-      |
-      v
-Docker Hub
+## Technologies Used
 
-Docker images are tagged using the Git commit SHA.
+- AWS EC2
+- Ubuntu Server 24.04 LTS
+- Git and GitHub
+- GitHub Actions
+- Docker and Docker Hub
+- Kubernetes
+- Minikube
+- Argo CD
+- kubectl
+- YAML
+- Node.js
+- npm
+- Linux
+- GitOps
 
-Example:
+## AWS Infrastructure
 
-krishnavarmavuyyuri/cicd-kubernetes-app:0017d3b
+The Kubernetes environment runs on AWS EC2.
 
-This allows each Docker image to be traced back to a specific source-code version.
+| Configuration | Value |
+|---|---|
+| Instance type | M7i-flex.large |
+| vCPU | 2 |
+| Memory | 8 GiB |
+| Operating system | Ubuntu 24.04 LTS |
+| Root EBS volume | 40 GiB |
+| Container runtime | Docker |
+| Kubernetes distribution | Minikube |
+| Minikube driver | Docker |
 
-3. Kubernetes Deployment
-Docker Hub
-     |
-     v
-Self-Hosted Runner
-     |
-     v
-kubectl
-     |
-     v
-Kubernetes Deployment
-     |
-     v
-Rolling Update
+### Infrastructure installation
 
-The deployment uses the exact Docker image generated from the Git commit.
+Docker is installed using the official Docker repository.
 
-Docker
+Minikube is configured using the Docker driver.
 
-The application is containerized using Docker.
+Start the cluster:
 
-The Docker image:
+```bash
+minikube start --driver=docker --cpus=2 --memory=5500
+```
 
-Uses Node.js Alpine
-Installs production dependencies using npm ci --omit=dev
-Uses Docker layer caching
-Runs the application as the non-root node user
-Exposes port 3000
+Verify:
+
+```bash
+minikube status
+kubectl get nodes
+kubectl get pods -A
+```
+
+## Docker
+
+The Node.js application is containerized using Docker.
+
+Docker Hub repository:
+
+```text
+krishnavarmavuyyuri/cicd-kubernetes-app
+```
+
+Example image:
+
+```text
+krishnavarmavuyyuri/cicd-kubernetes-app:1.0
+```
+
+The project uses:
+
+- Node.js Alpine base image
+- Production-only npm dependencies
+- Docker layer caching
+- Non-root container execution
+- `.dockerignore`
+- Application port 3000
 
 Build locally:
 
+```bash
 docker build -t cicd-kubernetes-app:local .
+```
 
-Run:
+Run locally:
 
+```bash
 docker run -d \
   --name cicd-local-test \
   -p 3000:3000 \
   cicd-kubernetes-app:local
+```
 
 Test:
 
+```bash
 curl http://localhost:3000/health
+curl http://localhost:3000/api/users
+```
 
-Verify the container user:
+## Kubernetes
 
-docker exec cicd-local-test whoami
+The application is deployed to Minikube using Kubernetes resources.
 
-Expected:
+### Namespace
 
-node
-Kubernetes
-
-The application is deployed using three Kubernetes resources:
-
-Namespace
+```text
 cicd-demo
-Deployment
+```
 
-The Deployment manages the application Pods.
+### Deployment
 
-Configuration includes:
+```text
+cicd-app
+```
 
-1 replica
-RollingUpdate strategy
-maxUnavailable: 0
-maxSurge: 1
-Readiness probe
-Liveness probe
-CPU requests and limits
-Memory requests and limits
-Application environment variables
-Service
+Deployment configuration includes:
 
-A NodePort Service exposes the application:
+- One application replica
+- RollingUpdate strategy
+- maxUnavailable: 0
+- maxSurge: 1
+- Readiness probe
+- Liveness probe
+- CPU and memory requests
+- CPU and memory limits
+- Application port 3000
 
-Service Port: 80
-Target Port: 3000
-NodePort: 31080
-Kubernetes Health Checks
-Readiness Probe
+### Service
+
+```text
+cicd-app-service
+```
+
+| Configuration | Value |
+|---|---|
+| Type | NodePort |
+| Service port | 80 |
+| Target port | 3000 |
+| NodePort | Dynamically assigned |
+
+### Useful commands
+
+```bash
+kubectl get pods -n cicd-demo
+kubectl get deployments -n cicd-demo
+kubectl get services -n cicd-demo
+kubectl get endpoints -n cicd-demo
+```
+
+## Argo CD and GitOps
+
+Argo CD is installed inside the Kubernetes cluster in a dedicated namespace.
+
+### Argo CD namespace
+
+```text
+argocd
+```
+
+### GitOps repository
+
+Repository:
+
+https://github.com/KrishnaVarmaVuyyuri/cicd-kubernetes-gitops
+
+The GitOps repository contains:
+
+```text
+cicd-kubernetes-gitops/
+|
+├── deployment.yaml
+├── namespace.yaml
+├── service.yaml
+└── README.md
+```
+
+### Argo CD Application
+
+Application name:
+
+```text
+cicd-app-gitops
+```
+
+Configuration:
+
+| Setting | Value |
+|---|---|
+| Repository | cicd-kubernetes-gitops |
+| Branch | master |
+| Path | . |
+| Destination cluster | https://kubernetes.default.svc |
+| Destination namespace | cicd-demo |
+| Sync policy | Automatic |
+| Self Heal | Enabled |
+| Prune | Enabled |
+
+### How GitOps works
+
+Argo CD continuously monitors the GitOps repository.
+
+It compares:
+
+- Desired state: Kubernetes manifests stored in Git.
+- Actual state: Resources currently running in Kubernetes.
+
+When the Git configuration changes, Argo CD detects the difference and synchronizes the cluster according to the configured sync policy.
+
+### Useful Argo CD commands
+
+Check Argo CD pods:
+
+```bash
+kubectl get pods -n argocd
+```
+
+Check services:
+
+```bash
+kubectl get svc -n argocd
+```
+
+Retrieve the initial admin password:
+
+```bash
+kubectl get secret argocd-initial-admin-secret \
+  -n argocd \
+  -o jsonpath="{.data.password}" | base64 -d
+```
+
+## Accessing Argo CD UI from Windows
+
+The Argo CD dashboard is accessed securely using SSH local port forwarding.
+
+On the EC2 instance:
+
+```bash
+kubectl get svc argocd-server -n argocd
+```
+
+The Argo CD service uses NodePort.
+
+From Windows PowerShell:
+
+```powershell
+ssh -i "your-key.pem" `
+-L 8443:192.168.49.2:31146 `
+ubuntu@YOUR_EC2_PUBLIC_IP
+```
+
+Open:
+
+```text
+https://localhost:8443
+```
+
+The SSH connection must remain active while accessing the dashboard.
+
+## Accessing the Node.js Application from Windows
+
+The application runs inside a Kubernetes Pod.
+
+Start port forwarding on EC2:
+
+```bash
+kubectl port-forward \
+  svc/cicd-app-service \
+  -n cicd-demo 3000:80
+```
+
+From Windows PowerShell:
+
+```powershell
+ssh -i "your-key.pem" `
+-L 3000:localhost:3000 `
+ubuntu@YOUR_EC2_PUBLIC_IP
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+Application endpoints:
+
+```text
+http://localhost:3000/health
+http://localhost:3000/api/users
+```
+
+## GitHub Actions CI
+
+The application repository uses GitHub Actions for continuous integration.
+
+The CI workflow performs:
+
+1. Checkout source code.
+2. Install Node.js dependencies.
+3. Run automated tests.
+4. Build Docker image.
+5. Tag the image using the Git commit SHA.
+6. Push the image to Docker Hub.
+
+Docker Hub credentials are stored as GitHub repository secrets.
+
+Required secrets:
+
+```text
+DOCKERHUB_USERNAME
+DOCKERHUB_TOKEN
+```
+
+Credentials are not stored directly in workflow files.
+
+## GitOps Delivery Workflow
+
+The GitOps repository is the source of truth for Kubernetes deployment configuration.
+
+The intended complete delivery flow is:
+
+```text
+Application Code Push
+        |
+        v
+GitHub Actions CI
+        |
+        v
+Run Tests
+        |
+        v
+Build Docker Image
+        |
+        v
+Push to Docker Hub
+        |
+        v
+Update Image Tag in GitOps Repository
+        |
+        v
+Argo CD Detects Git Change
+        |
+        v
+Synchronize Kubernetes
+        |
+        v
+New Application Version Running
+```
+
+The automated GitOps image-tag update is a planned next integration.
+
+## Kubernetes Health Checks
+
+### Readiness Probe
 
 The readiness probe checks:
 
+```text
 GET /health
+```
 
-A Pod becomes ready only after the application responds successfully.
+A Pod receives application traffic only when it is ready.
 
-Pod starts
-   |
-   v
-Readiness check
-   |
-   +---- failure ---> Pod not ready
-   |
-   +---- success ---> Pod receives traffic
-Liveness Probe
+### Liveness Probe
 
 The liveness probe checks whether the application remains healthy.
 
 If the liveness check repeatedly fails, Kubernetes can restart the container.
 
-Application
-     |
-     v
-Liveness Probe
-     |
-     +---- Healthy ---> Continue running
-     |
-     +---- Failed ----> Container restart
-Rolling Updates
+## Rolling Updates
 
 The Deployment uses:
 
+```yaml
 strategy:
   type: RollingUpdate
   rollingUpdate:
     maxUnavailable: 0
     maxSurge: 1
+```
 
-This allows Kubernetes to start the new Pod before terminating the old Pod.
-
-Old Pod
-   |
-   +----------------+
-                    |
-                    v
-               New Pod
-                    |
-               Readiness OK
-                    |
-                    v
-              Old Pod removed
-Local Kubernetes Setup
-
-Start Minikube:
-
-minikube start --driver=docker --memory=1800 --cpus=2
-
-Verify:
-
-minikube status
-
-Check the cluster:
-
-kubectl get nodes
-
-Expected:
-
-minikube   Ready
-Deploy Manually
-
-Apply the Kubernetes resources:
-
-kubectl apply -f k8s/
-
-Check resources:
-
-kubectl get all -n cicd-demo
-
-Check Pods:
-
-kubectl get pods -n cicd-demo
-
-Check Deployment:
-
-kubectl get deployment -n cicd-demo
-Access the Application
-
-Get the Minikube service URL:
-
-minikube service cicd-app-service -n cicd-demo --url
-
-Test the health endpoint:
-
-curl http://127.0.0.1:<PORT>/health
-Useful Kubernetes Commands
-
-Check Pods:
-
-kubectl get pods -n cicd-demo
-
-Describe a Pod:
-
-kubectl describe pod -n cicd-demo
-
-Check Deployment:
-
-kubectl get deployment cicd-app -n cicd-demo
+This allows Kubernetes to start a new Pod before removing the old Pod, subject to available cluster resources and successful readiness checks.
 
 Check rollout:
 
+```bash
 kubectl rollout status deployment/cicd-app -n cicd-demo
+```
 
-Check rollout history:
+## Security Practices
 
-kubectl rollout history deployment/cicd-app -n cicd-demo
+- Docker Hub credentials stored in GitHub Secrets.
+- No credentials hardcoded in source code.
+- Docker container runs as a non-root user.
+- Production-only npm dependencies.
+- Kubernetes resource requests and limits.
+- EC2 SSH access restricted through security groups.
+- Argo CD dashboard accessed through SSH port forwarding.
+- No publicly exposed Kubernetes API or dashboard ports.
 
-Check Service:
+## Troubleshooting
 
-kubectl get service -n cicd-demo
-GitHub Actions
+Check Minikube:
 
-The GitHub Actions workflow performs:
-
-Checkout
-   |
-Install Dependencies
-   |
-Run Tests
-   |
-Build Docker Image
-   |
-Push Docker Image
-   |
-Deploy to Kubernetes
-   |
-Wait for Rollout
-   |
-Verify Deployment
-
-Docker Hub credentials are stored as GitHub Actions repository secrets.
-
-Required secrets:
-
-DOCKERHUB_USERNAME
-DOCKERHUB_TOKEN
-
-Credentials are not stored directly in the workflow.
-
-Self-Hosted Runner
-
-The deployment job uses a self-hosted GitHub Actions runner because the Kubernetes cluster is running locally through Minikube.
-
-Architecture:
-
-GitHub
-   |
-   v
-GitHub Actions
-   |
-   v
-Self-Hosted Runner
-   |
-   +---- kubectl
-   |
-   +---- Minikube
-   |
-   v
-Kubernetes
-
-This allows the deployment workflow to communicate with the local Kubernetes API server.
-
-Image Versioning
-
-Docker images are tagged using the Git commit SHA.
-
-Example:
-
-Git Commit
-    |
-    v
-0017d3b
-    |
-    v
-Docker Image
-    |
-    v
-cicd-kubernetes-app:0017d3b
-
-This provides traceability between:
-
-Git Commit
-    |
-Docker Image
-    |
-Kubernetes Deployment
-Security Practices
-
-This project follows several basic container security practices:
-
-Docker Hub credentials stored in GitHub Secrets
-No credentials hardcoded in source code
-Docker container runs as a non-root user
-Production-only npm dependencies installed
-.dockerignore prevents unnecessary files from entering the image
-Kubernetes resource limits prevent excessive resource consumption
-Troubleshooting
-Check Minikube
+```bash
 minikube status
-Check Kubernetes nodes
+```
+
+Check Kubernetes nodes:
+
+```bash
 kubectl get nodes
-Check application Pods
+```
+
+Check Argo CD:
+
+```bash
+kubectl get pods -n argocd
+```
+
+Check application Pods:
+
+```bash
 kubectl get pods -n cicd-demo
-Check Pod logs
+```
+
+Check Pod logs:
+
+```bash
 kubectl logs -n cicd-demo <pod-name>
-Check Pod events
+```
+
+Describe a Pod:
+
+```bash
 kubectl describe pod -n cicd-demo <pod-name>
-Check rollout
+```
+
+Check rollout:
+
+```bash
 kubectl rollout status deployment/cicd-app -n cicd-demo
-Skills Demonstrated
+```
 
-This project demonstrates practical experience with:
+Check Argo CD Application:
 
-Linux
-Git
-GitHub
-GitHub Actions
-CI/CD
-Docker
-Docker Hub
-Dockerfile optimization
-Kubernetes
-Kubernetes Deployments
-Kubernetes Services
-Kubernetes Namespaces
-Kubernetes Probes
-Kubernetes Rolling Updates
-kubectl
-YAML
-Container security
-Infrastructure automation
-Deployment verification
+```bash
+kubectl get applications -n argocd
+```
+
+Check disk space:
+
+```bash
+df -h
+```
+
+## Skills Demonstrated
+
+- Linux administration
+- AWS EC2 infrastructure
+- Docker containerization
+- Docker Hub image publishing
+- GitHub Actions CI pipelines
+- Kubernetes Deployments and Services
+- Minikube cluster management
+- Argo CD
+- GitOps principles
+- Kubernetes health probes
+- Rolling updates
+- Resource management
+- YAML configuration
+- SSH port forwarding
+- Container security
+- Infrastructure troubleshooting
+
+---
+
+**Project:** CI/CD and GitOps Pipeline with GitHub Actions, Docker, Kubernetes and Argo CD.
